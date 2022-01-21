@@ -135,6 +135,11 @@ def replace_av_numbers(handle):
         else:
             if room_info.cable_number < 10:
                 cable_number_string = '="00' + str(room_info.cable_number) + '"'
+        cable_info = vs.GetRecord(handle, 1)
+        if cable_info is not None:
+            record_name = vs.GetName(cable_info)
+            vs.SetRField(handle, record_name, 'Room', room_info.room)
+            vs.SetRField(handle, record_name, 'Floor', room_info.floor)
         if produce_excel_schedule:
             cable_type = 'Record missing'
             cable_purpose = 'Record missing'

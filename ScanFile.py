@@ -13,17 +13,28 @@ record_list = []
 fields = []
 excel_rows = []
 current_record = ''
-csv_header = ['Floor', 'Room', 'Cable Type', 'AV Number', 'Cable Number', 'Cable Purpose', 'From', 'To']
-
+csv_header = []
+use_old_labels = False
 
 def scan_document(handle):
     global fields
     global current_record
-    vs.AlrtDialog(vs.GetSymName(handle))
+    global use_old_labels
+    cable_number = ''
+    if use_old_labels: # AV-01 001
+        ptr = vs.GetSymLoc(handle)
+        av_cable_number = list(vs.GetSymName(handle))
+        cable_number = vs.PickObject(ptr[0] + 8, ptr[1])
+        if av_cable_number[2] == '0':
+            av_cable_number[2] = '-'
+        else:
+            av_cable_number.insert(2, '-')
+        av_cable_number = ''.join(av_cable_number)
+        cable_number = '="' + vs.GetSymName(cable_number) + '"'
+    else: #AV-1101
+        ptr = vs.GetSymLoc(handle)
+        av_cable_number = vs.GetText(handle)
     # Get coordinates of current handle
-    ptr = vs.GetSymLoc(handle)
-    cable_number = vs.PickObject(ptr[0] + 8, ptr[1])
-    vs.AlrtDialog(vs.GetSymName(cable_number))
     cable_type = 'Record missing'
     cable_purpose = 'Record missing'
     cable_from = 'Record missing'
@@ -39,26 +50,32 @@ def scan_document(handle):
         cable_to = vs.GetRField(handle, record_name, 'To')
         cable_floor = vs.GetRField(handle, record_name, 'Floor')
         cable_room = vs.GetRField(handle, record_name, 'Room')
-
-    excel_rows.append([cable_floor, cable_room, cable_type, '',
-                       '', cable_purpose, cable_from, cable_to])
-    # excel_rows.append([])
-    # for field in fields:
-        # vs.AlrtDialog(vs.GetRField(handle, current_record, field))
-
+    if use_old_labels:
+        excel_rows.append((cable_floor, cable_room, cable_type, av_cable_number,
+                           cable_number, cable_purpose, cable_from, cable_to))
+    else:
+        excel_rows.append((cable_floor, cable_room, cable_type, av_cable_number,
+                           cable_purpose, cable_from, cable_to))
 
 
 # @@@@@@@@ MAIN @@@@@@@@
 
 now = datetime.now()
-vs.AlrtDialog("This script will produce a new cable schedule. The name of the file is:" + 'Cable_Schedule_' +
+vs.AlrtDialog("This script will produce a new cable schedule. The name of the file is:" + ' Cable_Schedule_' +
               now.strftime("%d%m%Y_%H%M") + '.csv')
+
+use_old_labels = vs.YNDialog("Would you like to use the old AV labels?")
+if use_old_labels:
+    csv_header = ['Floor', 'Room', 'Cable Type', 'AV Number', 'Cable Number', 'Cable Purpose', 'From', 'To']
+else:
+    csv_header = ['Floor', 'Room', 'Cable Type', 'AV Number', 'Cable Purpose', 'From', 'To']
 
 # Get all records (including plugin objects...)
 number_of_records = vs.NumRecords('')
 
 
-for i in range(number_of_records):
+
+for i in range(1, number_of_records + 1):
     recordHandle = vs.GetRecord('', i)
     if not vs.IsPluginFormat(recordHandle):
         record_list.append(recordHandle)
@@ -78,5 +95,12 @@ for record in record_list:
 csvfile = open('Cable_Schedule_' + now.strftime("%d%m%Y_%H%M") + '.csv', 'w', newline='')
 excel_stream = csv.writer(csvfile, quoting=csv.QUOTE_NONNUMERIC, dialect='excel')
 excel_stream.writerow(csv_header)
-excel_stream.writerows(excel_rows)
+# Sort rows
+if use_old_labels:
+    sorter = lambda x: (x[3], x[4])
+else:
+    sorter = lambda x: (x[3])
+sorted_rows = sorted(excel_rows, key=sorter)
+excel_stream.writerows(sorted_rows)
 csvfile.close()
+vs.AlrtDialog("Done!")
