@@ -32,7 +32,6 @@ def scan_document(handle):
         av_cable_number = ''.join(av_cable_number)
         cable_number = '="' + vs.GetSymName(cable_number) + '"'
     else: #AV-1101
-        ptr = vs.GetSymLoc(handle)
         av_cable_number = vs.GetText(handle)
     # Get coordinates of current handle
     cable_type = 'Record missing'

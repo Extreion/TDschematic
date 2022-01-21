@@ -45,7 +45,7 @@ class Room:
     def __init__(self, x, y):
         self.width = 164
         self.height = 0
-        self.av_number = 1
+        self.av_number = 10
         self.cable_number = 0
         self.x = 0
         self.y = 0
@@ -113,48 +113,50 @@ def replace_local_numbers(handle):
     return
 
 
+def replace_new_labels(handle):
+    global room_info
+    global use_cable_numbers, use_av_numbers
+    global excel_rows
+
+    if use_av_numbers:
+        ptr = vs.GetSymLoc(handle)
+        av_text = vs.PickObject(ptr[0], ptr[1])
+        if room_info.cable_number < 10:
+            cable_number = "0" + str(room_info.cable_number)
+        else:
+            cable_number = str(room_info.cable_number)
+        if vs.GetText(av_text) != '':
+            vs.SetText(av_text, 'AV-' + str(room_info.av_number) + str(cable_number))
+        record = vs.GetRecord(av_text, 1)
+        if record is not None:
+            record_name = vs.GetName(record)
+            vs.SetRField(av_text, record_name, 'Room', room_info.room)
+            vs.SetRField(av_text, record_name, 'Floor', room_info.floor)
+        vs.SetHDef(handle, vs.GetObject("AV_Background"))
+        room_info.cable_number += 1
+    return
+
+
 def replace_av_numbers(handle):
     global room_info
     global use_cable_numbers, use_av_numbers
     global excel_rows
-    av_number_string = ""
-    cable_number_string = ""
+
     if use_av_numbers:
         if room_info.av_number >= 100:
             av_name = "AV" + str(room_info.av_number)
-            av_number_string = "AV-" + str(room_info.av_number)
         else:
             if 100 > room_info.av_number >= 10:
                 av_name = "AV0" + str(room_info.av_number)
-                av_number_string = "AV-" + str(room_info.av_number)
             else:
                 av_name = "AV00" + str(room_info.av_number)
-                av_number_string = "AV-0" + str(room_info.av_number)
-        if 10 <= room_info.cable_number < 100:
-                cable_number_string = '="0' + str(room_info.cable_number) + '"'
-        else:
-            if room_info.cable_number < 10:
-                cable_number_string = '="00' + str(room_info.cable_number) + '"'
         cable_info = vs.GetRecord(handle, 1)
         if cable_info is not None:
             record_name = vs.GetName(cable_info)
             vs.SetRField(handle, record_name, 'Room', room_info.room)
             vs.SetRField(handle, record_name, 'Floor', room_info.floor)
-        if produce_excel_schedule:
-            cable_type = 'Record missing'
-            cable_purpose = 'Record missing'
-            cable_from = 'Record missing'
-            cable_to = 'Record missing'
-            cable_info = vs.GetRecord(handle, 1)
-            if cable_info is not None:
-                record_name = vs.GetName(cable_info)
-                cable_type = vs.GetRField(handle, record_name, 'Cable Type')
-                cable_purpose = vs.GetRField(handle, record_name, 'Cable Purpose')
-                cable_from = vs.GetRField(handle, record_name, 'From')
-                cable_to = vs.GetRField(handle, record_name, 'To')
-            excel_rows.append([room_info.floor, room_info.room, cable_type, av_number_string,
-                               str(cable_number_string), cable_purpose, cable_from, cable_to])
         vs.SetHDef(handle, vs.GetObject(av_name))
+
     if use_cable_numbers:
         if room_info.cable_number >= 100:
             cable_name = str(room_info.cable_number)
@@ -177,20 +179,11 @@ def replace_cctv_numbers(handle):
     global use_cctv_numbers
     global excel_rows
     if use_cctv_numbers:
-        if produce_excel_schedule:
-            cable_type = 'Record missing'
-            cable_purpose = 'Record missing'
-            cable_from = 'Record missing'
-            cable_to = 'Record missing'
-            cable_info = vs.GetRecord(handle, 1)
-            if cable_info is not None:
-                record_name = vs.GetName(cable_info)
-                cable_type = vs.GetRField(handle, record_name, 'Cable Type')
-                cable_purpose = vs.GetRField(handle, record_name, 'Cable Purpose')
-                cable_from = vs.GetRField(handle, record_name, 'From')
-                cable_to = vs.GetRField(handle, record_name, 'To')
-            excel_rows.append([room_info.floor, room_info.room, cable_type, "CCTV",
-                               schematic.cctv_number, cable_purpose, cable_from, cable_to])
+        cable_info = vs.GetRecord(handle, 1)
+        if cable_info is not None:
+            record_name = vs.GetName(cable_info)
+            vs.SetRField(handle, record_name, 'Room', room_info.room)
+            vs.SetRField(handle, record_name, 'Floor', room_info.floor)
         vs.SetHDef(handle, vs.GetObject("CCTV"))
     if use_cable_numbers:
         if schematic.cctv_number >= 100:
@@ -214,20 +207,11 @@ def replace_de_numbers(handle):
     global use_de_numbers
     global excel_rows
     if use_de_numbers:
-        if produce_excel_schedule:
-            cable_type = 'Record missing'
-            cable_purpose = 'Record missing'
-            cable_from = 'Record missing'
-            cable_to = 'Record missing'
-            cable_info = vs.GetRecord(handle, 1)
-            if cable_info is not None:
-                record_name = vs.GetName(cable_info)
-                cable_type = vs.GetRField(handle, record_name, 'Cable Type')
-                cable_purpose = vs.GetRField(handle, record_name, 'Cable Purpose')
-                cable_from = vs.GetRField(handle, record_name, 'From')
-                cable_to = vs.GetRField(handle, record_name, 'To')
-            excel_rows.append([room_info.floor, room_info.room, cable_type, "DE",
-                               schematic.de_number, cable_purpose, cable_from, cable_to])
+        cable_info = vs.GetRecord(handle, 1)
+        if cable_info is not None:
+            record_name = vs.GetName(cable_info)
+            vs.SetRField(handle, record_name, 'Room', room_info.room)
+            vs.SetRField(handle, record_name, 'Floor', room_info.floor)
         vs.SetHDef(handle, vs.GetObject("Door Ent"))
     if use_cable_numbers:
         if schematic.de_number >= 100:
@@ -354,6 +338,7 @@ def def_equipment_start(current_row, schematic_tab):
 
 def def_room_end(current_row, schematic_tab):
     global room_info, page
+    global use_old_labels
     vs.FillPat(0)
     vs.PenBack(colour_black)
     vs.PenFore(colour_black)
@@ -361,7 +346,10 @@ def def_room_end(current_row, schematic_tab):
     page.y_pointer -= 4
     current_row += 1
     room_info.cable_number = 1
-    vs.ForEachObject(replace_av_numbers, "S=AVTBC")
+    if use_old_labels:
+        vs.ForEachObject(replace_av_numbers, "S=AVTBC")
+    else:
+        vs.ForEachObject(replace_new_labels, "S=AV_Background_TBC")
     vs.ForEachObject(replace_tv_numbers, "S=TVTBC")
     vs.ForEachObject(replace_local_numbers, "S=LocalTBC")
     vs.ForEachObject(replace_cctv_numbers, "S=CCTVTBC")
@@ -396,8 +384,9 @@ use_local_numbers = True
 use_de_numbers = True
 use_cctv_numbers = True
 if use_cable_numbers and use_av_numbers:
-    produce_excel_schedule = vs.YNDialog("Produce a cable schedule?")
+    produce_excel_schedule = False
 vs.Symbol("Central System Rack Main", (page.x + 4, page.y - 4), 0)
+use_old_labels = vs.YNDialog("Would you like to use old AV labels?")
 for row in range(len(exSchematic)):
     # Get property string in first column of the schematic
     property_string = exSchematic[row][offset_array_start]
@@ -408,11 +397,3 @@ for row in range(len(exSchematic)):
     property_function = string_to_def(property_string)
     if property_function != "Invalid method":
         row = property_function(row, exSchematic)
-if produce_excel_schedule:
-    now = datetime.now()
-    csvfile = open('Cable_Schedule_' + now.strftime("%d%m%Y_%H%M") + '.csv', 'w', newline='')
-    # excel_stream = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL, dialect='excel')
-    excel_stream = csv.writer(csvfile, quoting=csv.QUOTE_NONNUMERIC, dialect='excel')
-    excel_stream.writerow(['Floor', 'Room', 'Cable Type', 'AV Number', 'Cable Number', 'Purpose', 'From', 'To'])
-    excel_stream.writerows(excel_rows)
-    csvfile.close()
