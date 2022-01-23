@@ -21,18 +21,36 @@ def scan_document(handle):
     global current_record
     global use_old_labels
     cable_number = ''
-    if use_old_labels: # AV-01 001
-        ptr = vs.GetSymLoc(handle)
-        av_cable_number = list(vs.GetSymName(handle))
-        cable_number = vs.PickObject(ptr[0] + 8, ptr[1])
-        if av_cable_number[2] == '0':
-            av_cable_number[2] = '-'
-        else:
-            av_cable_number.insert(2, '-')
-        av_cable_number = ''.join(av_cable_number)
-        cable_number = '="' + vs.GetSymName(cable_number) + '"'
-    else: #AV-1101
+    if not use_old_labels and vs.GetText(handle) != '': #AV-1101
         av_cable_number = vs.GetText(handle)
+    else: # AV-01 001 or DE or CCTV or whatever
+        ptr = vs.GetSymLoc(handle)
+        cable_name = vs.GetSymName(handle)
+        cable_number = vs.PickObject(ptr[0] + 8, ptr[1])
+        if "AV" in cable_name:
+            av_cable_number = list(vs.GetSymName(handle))
+            if av_cable_number[2] == '0':
+                av_cable_number[2] = '-'
+            else:
+                av_cable_number.insert(2, '-')
+            if use_old_labels:
+                av_cable_number = ''.join(av_cable_number)
+                cable_number = '="' + vs.GetSymName(cable_number) + '"'
+            else:
+                av_cable_number = ''.join(av_cable_number) + '-' + vs.GetSymName(cable_number)
+        else:
+            if "Door Ent" in cable_name:
+                if use_old_labels:
+                    av_cable_number = "DE"
+                    cable_number = '="' + vs.GetSymName(cable_number) + '"'
+                else:
+                    av_cable_number = "DE-" + vs.GetSymName(cable_number)
+            else: #Link or CCTV
+                if use_old_labels:
+                    av_cable_number = cable_name
+                    cable_number = '="' + vs.GetSymName(cable_number) + '"'
+                else:
+                    av_cable_number = cable_name + '-' + vs.GetSymName(cable_number)
     # Get coordinates of current handle
     cable_type = 'Record missing'
     cable_purpose = 'Record missing'

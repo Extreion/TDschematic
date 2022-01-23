@@ -26,6 +26,7 @@ class Schematic:
         self.tv_number = 1
         self.de_number = 1
         self.cctv_number = 1
+        self.rack = 'Main AV Rack'
 
 
 class Page:
@@ -45,7 +46,7 @@ class Room:
     def __init__(self, x, y):
         self.width = 164
         self.height = 0
-        self.av_number = 10
+        self.av_number = 11
         self.cable_number = 0
         self.x = 0
         self.y = 0
@@ -125,13 +126,15 @@ def replace_new_labels(handle):
             cable_number = "0" + str(room_info.cable_number)
         else:
             cable_number = str(room_info.cable_number)
-        if vs.GetText(av_text) != '':
+        if vs.GetText(av_text):
             vs.SetText(av_text, 'AV-' + str(room_info.av_number) + str(cable_number))
         record = vs.GetRecord(av_text, 1)
         if record is not None:
             record_name = vs.GetName(record)
             vs.SetRField(av_text, record_name, 'Room', room_info.room)
             vs.SetRField(av_text, record_name, 'Floor', room_info.floor)
+            if not vs.GetRField(av_text, record_name, 'From'):
+                vs.SetRField(av_text, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject("AV_Background"))
         room_info.cable_number += 1
     return
@@ -155,6 +158,8 @@ def replace_av_numbers(handle):
             record_name = vs.GetName(cable_info)
             vs.SetRField(handle, record_name, 'Room', room_info.room)
             vs.SetRField(handle, record_name, 'Floor', room_info.floor)
+            if not vs.GetRField(handle, record_name, 'From'):
+                vs.SetRField(handle, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject(av_name))
 
     if use_cable_numbers:
@@ -184,6 +189,8 @@ def replace_cctv_numbers(handle):
             record_name = vs.GetName(cable_info)
             vs.SetRField(handle, record_name, 'Room', room_info.room)
             vs.SetRField(handle, record_name, 'Floor', room_info.floor)
+            if not vs.GetRField(handle, record_name, 'From'):
+                vs.SetRField(handle, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject("CCTV"))
     if use_cable_numbers:
         if schematic.cctv_number >= 100:
@@ -212,6 +219,8 @@ def replace_de_numbers(handle):
             record_name = vs.GetName(cable_info)
             vs.SetRField(handle, record_name, 'Room', room_info.room)
             vs.SetRField(handle, record_name, 'Floor', room_info.floor)
+            if not vs.GetRField(handle, record_name, 'From'):
+                vs.SetRField(handle, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject("Door Ent"))
     if use_cable_numbers:
         if schematic.de_number >= 100:
@@ -265,6 +274,8 @@ def def_room_start(current_row, schematic_tab):
             room_info.floor = value
         if property == "ROOM NAME":
             room_info.room = value
+        if property == "ROOM RACK" and value != '':
+            schematic.rack = value
         current_row += 1
     return current_row
 
