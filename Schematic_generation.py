@@ -15,7 +15,7 @@ offset_array_start = 0
 offset_value = 2  # for room properties
 offset_equipment_name = 1  # for equipment name
 offset_equipment_quantity = 2  # for equipment quantity
-
+offset_equipment_rack = 3  # for equipment rack
 
 # Class definition
 class Schematic:
@@ -53,6 +53,7 @@ class Room:
         self.room = ""
         self.floor = ""
         self.labels_created = 0
+        self.rack = ""
 
 
 schematic = Schematic(-1008, 500)
@@ -134,7 +135,10 @@ def replace_new_labels(handle):
             vs.SetRField(av_text, record_name, 'Room', room_info.room)
             vs.SetRField(av_text, record_name, 'Floor', room_info.floor)
             if not vs.GetRField(av_text, record_name, 'From'):
-                vs.SetRField(av_text, record_name, 'From', schematic.rack)
+                if room_info.rack:
+                    vs.SetRField(av_text, record_name, 'From', room_info.rack)
+                else:
+                    vs.SetRField(av_text, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject("AV_Background"))
         room_info.cable_number += 1
     return
@@ -159,7 +163,10 @@ def replace_av_numbers(handle):
             vs.SetRField(handle, record_name, 'Room', room_info.room)
             vs.SetRField(handle, record_name, 'Floor', room_info.floor)
             if not vs.GetRField(handle, record_name, 'From'):
-                vs.SetRField(handle, record_name, 'From', schematic.rack)
+                if room_info.rack:
+                    vs.SetRField(handle, record_name, 'From', room_info.rack)
+                else:
+                    vs.SetRField(handle, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject(av_name))
 
     if use_cable_numbers:
@@ -190,7 +197,10 @@ def replace_cctv_numbers(handle):
             vs.SetRField(handle, record_name, 'Room', room_info.room)
             vs.SetRField(handle, record_name, 'Floor', room_info.floor)
             if not vs.GetRField(handle, record_name, 'From'):
-                vs.SetRField(handle, record_name, 'From', schematic.rack)
+                if room_info.rack:
+                    vs.SetRField(handle, record_name, 'From', room_info.rack)
+                else:
+                    vs.SetRField(handle, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject("CCTV"))
     if use_cable_numbers:
         if schematic.cctv_number >= 100:
@@ -220,7 +230,10 @@ def replace_de_numbers(handle):
             vs.SetRField(handle, record_name, 'Room', room_info.room)
             vs.SetRField(handle, record_name, 'Floor', room_info.floor)
             if not vs.GetRField(handle, record_name, 'From'):
-                vs.SetRField(handle, record_name, 'From', schematic.rack)
+                if room_info.rack:
+                    vs.SetRField(handle, record_name, 'From', room_info.rack)
+                else:
+                    vs.SetRField(handle, record_name, 'From', schematic.rack)
         vs.SetHDef(handle, vs.GetObject("Door Ent"))
     if use_cable_numbers:
         if schematic.de_number >= 100:
@@ -310,6 +323,7 @@ def def_equipment_start(current_row, schematic_tab):
     while schematic_tab[current_row][offset_array_start] != "ROOM EQUIPMENT END":
         equipment = schematic_tab[current_row][offset_array_start + offset_equipment_name]
         quantity = schematic_tab[current_row][offset_array_start + offset_equipment_quantity]
+        room_info.rack = schematic_tab[current_row][offset_array_start + offset_equipment_rack]
         # if there is an equipment
         if equipment != "":
             # display it as many times as needed
@@ -343,6 +357,14 @@ def def_equipment_start(current_row, schematic_tab):
                     room_info.height += symbol_height + symbol_height % 4
                 vs.SymbolToGroup(vs.LNewObj(), 0)
                 vs.Ungroup()
+                if use_old_labels:
+                    vs.ForEachObject(replace_av_numbers, "S=AVTBC")
+                else:
+                    vs.ForEachObject(replace_new_labels, "S=AV_Background_TBC")
+                vs.ForEachObject(replace_tv_numbers, "S=TVTBC")
+                vs.ForEachObject(replace_local_numbers, "S=LocalTBC")
+                vs.ForEachObject(replace_cctv_numbers, "S=CCTVTBC")
+                vs.ForEachObject(replace_de_numbers, "S=DoorEntTBC")
         current_row += 1
     return current_row
 
@@ -357,14 +379,6 @@ def def_room_end(current_row, schematic_tab):
     page.y_pointer -= 4
     current_row += 1
     room_info.cable_number = 1
-    if use_old_labels:
-        vs.ForEachObject(replace_av_numbers, "S=AVTBC")
-    else:
-        vs.ForEachObject(replace_new_labels, "S=AV_Background_TBC")
-    vs.ForEachObject(replace_tv_numbers, "S=TVTBC")
-    vs.ForEachObject(replace_local_numbers, "S=LocalTBC")
-    vs.ForEachObject(replace_cctv_numbers, "S=CCTVTBC")
-    vs.ForEachObject(replace_de_numbers, "S=DoorEntTBC")
     room_info.av_number += 1
     return current_row
 
